@@ -314,31 +314,45 @@ async function loadSelectedPublications() {
 
 
 // Format venue string to include DOI
-function formatVenueWithDoi(venue, doi) {
-    if (!doi || !venue) return venue;
+function formatVenueWithDoi(venue, doi, date) {
+    if (!venue) return venue;
+
+    // Use full date when more precise than year alone
+    const trailingDate = (date && date.length > 4) ? date : null;
+
+    if (!doi) {
+        if (!trailingDate) return venue;
+        const ym = venue.match(/,\s*(\d{4})\s*$/);
+        return ym
+            ? venue.slice(0, venue.lastIndexOf(ym[0])) + ', ' + trailingDate
+            : venue + ', ' + trailingDate;
+    }
 
     const doiStr = 'doi:' + doi;
 
     // bioRxiv: replace the preprint number with DOI
     if (/^bioRxiv/i.test(venue)) {
         const ym = venue.match(/,\s*(\d{4})\s*$/);
-        return ym ? 'bioRxiv, ' + doiStr + ', ' + ym[1] : 'bioRxiv, ' + doiStr;
+        const tail = trailingDate || (ym && ym[1]);
+        return tail ? 'bioRxiv, ' + doiStr + ', ' + tail : 'bioRxiv, ' + doiStr;
     }
 
     // arXiv: replace the arXiv identifier with DOI
     if (/^arXiv/i.test(venue)) {
         const ym = venue.match(/,\s*(\d{4})\s*$/);
-        return ym ? 'arXiv, ' + doiStr + ', ' + ym[1] : 'arXiv, ' + doiStr;
+        const tail = trailingDate || (ym && ym[1]);
+        return tail ? 'arXiv, ' + doiStr + ', ' + tail : 'arXiv, ' + doiStr;
     }
 
-    // Regular venue: insert DOI before the trailing year
+    // Regular venue: insert DOI before the trailing year (or full date if more precise)
     const ym = venue.match(/,\s*(\d{4})\s*$/);
     if (ym) {
-        return venue.slice(0, venue.lastIndexOf(ym[0])) + ', ' + doiStr + ', ' + ym[1];
+        const tail = trailingDate || ym[1];
+        return venue.slice(0, venue.lastIndexOf(ym[0])) + ', ' + doiStr + ', ' + tail;
     }
 
-    // No year at end: append DOI
-    return venue + ', ' + doiStr;
+    // No year at end: append DOI (and date if available)
+    return trailingDate ? venue + ', ' + doiStr + ', ' + trailingDate : venue + ', ' + doiStr;
 }
 
 // Format authors to highlight Kinney
@@ -361,7 +375,7 @@ function createPublicationHTML(pub, number) {
     const title = pub.title || '';
     const authors = formatAuthors(pub.authors);
     const doi = (pub.doi || '').trim();
-    const venue = formatVenueWithDoi(pub.venue || '', doi);
+    const venue = formatVenueWithDoi(pub.venue || '', doi, pub.date || '');
 
     // Link: prefer paper URL, fall back to preprint
     const citationUrl = pub.paper || pub.preprint || '';
@@ -384,11 +398,8 @@ function createPublicationHTML(pub, number) {
         ? `<div class="pub-additional-links">${addLinks.join(' | ')}</div>`
         : '';
     let itemClass = 'pub-item';
-    if (pub.led_by_kinney !== 'TRUE') {
-        itemClass += ' pub-item-collab';
-    } else if (isPreprint) {
-        itemClass += ' pub-item-preprint';
-    }
+    itemClass += pub.led_by_kinney === 'TRUE' ? ' pub-item-led' : ' pub-item-collab';
+    if (isPreprint) itemClass += ' pub-item-preprint';
 
     const citationInner = `
                 <h3 class="pub-title">${title}</h3>
@@ -433,7 +444,7 @@ function renderPublications(publications) {
     const byYear = {};
 
     publications.forEach(pub => {
-        const year = pub.year || 'Unknown';
+        const year = (pub.date || '').slice(0, 4) || 'Unknown';
         if (!byYear[year]) {
             byYear[year] = [];
         }

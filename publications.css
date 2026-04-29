@@ -89,9 +89,15 @@
     text-decoration: none;
 }
 
-.pub-item-preprint .pub-title,
-.pub-item-preprint .pub-authors,
-.pub-item-preprint .pub-journal {
+.pub-item-led .pub-title,
+.pub-item-led .pub-authors,
+.pub-item-led .pub-journal {
+    color: #1a3a6b;
+}
+
+.pub-item-led.pub-item-preprint .pub-title,
+.pub-item-led.pub-item-preprint .pub-authors,
+.pub-item-led.pub-item-preprint .pub-journal {
     color: #1a7a2e;
 }
 
