@@ -15,6 +15,13 @@ For each PDF:
     - Because the publication year (and so `date`) and `short_cite` change, the new row will move out of the preprint's year-section into the publication year's year-section. The final sort step at the end of this prompt handles row placement automatically.
     - Drop the old preprint row entirely (do not keep it as a separate "superseded" entry).
     - Skip steps 4–7 below for this PDF (they are subsumed by this replacement workflow); then continue to step 8.
+3b. **Check whether this is an accepted/in-press update for an existing preprint row.** If the paper has been accepted by a journal but there is not yet a final journal article URL/PDF/DOI, do **not** treat it as a preprint-to-published replacement. Instead, treat it as an *in-press preprint update*:
+    - Confirm the journal name and in-press status with the user if they did not state it explicitly.
+    - Keep the existing `pub_id`; do not create a new publication directory and do not move old files to `_preprint.pdf`.
+    - Replace the existing local preprint PDFs in `publications/files/{pub_id}/` with the new PDFs from `files_to_process/`, using the normal names `{pub_id}_main.pdf` and `{pub_id}_si.pdf`.
+    - Update the CSV row: set `status` to `in_press`, set `venue` to `{Journal}, in press; bioRxiv`, keep `paper` empty, preserve/update `preprint` to the latest bioRxiv URL, keep the bioRxiv DOI in `doi`, and use the latest bioRxiv posted date in `date`.
+    - If the bioRxiv URL/version is not provided, query the bioRxiv API at `https://api.biorxiv.org/details/biorxiv/{doi}` and use the latest version's URL and `date`.
+    - Keep PDF link labels generic on the site (e.g., `Main+SI PDF`, `Main PDF`, `SI PDF`); do not prefix them with `bioRxiv`.
 4. If the matched row does not yet have a `pub_id`, assign one using the convention below and add it to the CSV.
 5. Create the directory `publications/files/{pub_id}/` if it does not exist.
 6. Move the file there as `{pub_id}_main.pdf` or `{pub_id}_si.pdf` (do not copy — remove from `files_to_process/`).
@@ -34,6 +41,7 @@ After all PDFs have been processed:
 
 Notes:
 - PDFs and SI should be stored for ALL publications AND preprints (both led_by_kinney=TRUE and FALSE).
+- Any `preprint` URL pointing to bioRxiv should always point to the latest available manuscript version, not an older version. Query `https://api.biorxiv.org/details/biorxiv/{doi}` when needed and use the highest version number's URL and posted date.
 - GitHub and ReadTheDocs links should only be populated for `led_by_kinney=TRUE` entries.
 
 Reference files:

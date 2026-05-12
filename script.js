@@ -314,11 +314,12 @@ async function loadSelectedPublications() {
 
 
 // Format venue string to include DOI
-function formatVenueWithDoi(venue, doi, date) {
+function formatVenueWithDoi(venue, doi, date, status) {
     if (!venue) return venue;
 
     // Use full date when more precise than year alone
     const trailingDate = (date && date.length > 4) ? date : null;
+    const isInPress = status === 'in_press';
 
     if (!doi) {
         if (!trailingDate) return venue;
@@ -329,6 +330,10 @@ function formatVenueWithDoi(venue, doi, date) {
     }
 
     const doiStr = 'doi:' + doi;
+
+    if (isInPress) {
+        return trailingDate ? venue + ', ' + doiStr + ', ' + trailingDate : venue + ', ' + doiStr;
+    }
 
     // bioRxiv: replace the preprint number with DOI
     if (/^bioRxiv/i.test(venue)) {
@@ -375,7 +380,9 @@ function createPublicationHTML(pub, number) {
     const title = pub.title || '';
     const authors = formatAuthors(pub.authors);
     const doi = (pub.doi || '').trim();
-    const venue = formatVenueWithDoi(pub.venue || '', doi, pub.date || '');
+    const status = (pub.status || '').trim();
+    const isInPress = status === 'in_press';
+    const venue = formatVenueWithDoi(pub.venue || '', doi, pub.date || '', status);
 
     // Link: prefer paper URL, fall back to preprint
     const citationUrl = pub.paper || pub.preprint || '';
@@ -399,7 +406,8 @@ function createPublicationHTML(pub, number) {
         : '';
     let itemClass = 'pub-item';
     itemClass += pub.led_by_kinney === 'TRUE' ? ' pub-item-led' : ' pub-item-collab';
-    if (isPreprint) itemClass += ' pub-item-preprint';
+    if (isInPress) itemClass += ' pub-item-inpress';
+    else if (isPreprint) itemClass += ' pub-item-preprint';
 
     const citationInner = `
                 <h3 class="pub-title">${title}</h3>

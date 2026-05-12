@@ -101,6 +101,12 @@
     color: #1a7a2e;
 }
 
+.pub-item-led.pub-item-inpress .pub-title,
+.pub-item-led.pub-item-inpress .pub-authors,
+.pub-item-led.pub-item-inpress .pub-journal {
+    color: #7b1f2a;
+}
+
 .pub-item-collab .pub-title,
 .pub-item-collab .pub-authors,
 .pub-item-collab .pub-journal {
