@@ -72,6 +72,8 @@ const githubIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="1
 
 const scholarIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5.242 13.769L0 9.5 12 0l12 9.5-5.242 4.269C17.548 11.249 14.978 9.5 12 9.5c-2.977 0-5.548 1.748-6.758 4.269zM12 10a7 7 0 1 0 0 14 7 7 0 0 0 0-14z"/></svg>`;
 
+const cvIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm0 2.5L17.5 8H14V4.5zM8 13h8v1.5H8V13zm0 3.5h8V18H8v-1.5zM8 9.5h4V11H8V9.5z"/></svg>`;
+
 // Parse CSV text into array of objects
 function parseCSV(csvText) {
     // Handle Windows line endings
@@ -131,6 +133,11 @@ function normalizePath(path) {
     return '/' + path;
 }
 
+// Rows are hidden only by an explicit FALSE; blank/missing means visible
+function isVisible(person) {
+    return (person['Show'] || '').trim().toUpperCase() !== 'FALSE';
+}
+
 // Create HTML for a team member
 function createTeamMemberHTML(member) {
     const name = member['Name'] || '';
@@ -176,22 +183,31 @@ function renderTeamMembers(people) {
 async function loadTeamMembers() {
     const container = document.getElementById('team-container');
     if (!container) return;
-    
-    
-    
-    const response = await fetch('/backend/people.csv');
-    if (!response.ok) {
-        throw new Error('Failed to load CSV');
+
+    const membersContainer = document.getElementById('team-members-container');
+
+    try {
+        const response = await fetch('/backend/people.csv');
+        if (!response.ok) {
+            throw new Error('Failed to load CSV');
+        }
+
+        const csvText = await response.text();
+        const people = parseCSV(csvText).filter(isVisible);
+
+        if (people.length > 0) {
+            renderTeamMembers(people);
+            return;
+        }
+        if (membersContainer) {
+            membersContainer.innerHTML = '<p class="error-message">No team members found.</p>';
+        }
+    } catch (error) {
+        if (membersContainer) {
+            membersContainer.innerHTML = '<p class="error-message">Unable to load team members.</p>';
+        }
     }
-    
-    const csvText = await response.text();
-    const people = parseCSV(csvText);
-    
-    if (people.length > 0) {
-        renderTeamMembers(people);
-        return;
-    }
-} 
+}
 
 
 // ===== RESEARCH HIGHLIGHTS (SELECTED PUBLICATIONS) =====
@@ -492,10 +508,11 @@ async function loadPublications() {
             renderPublications(publications);
             return;
         }
+        container.innerHTML = '<p class="error-message">No publications found.</p>';
     } catch (error) {
-        // Fetch failed (e.g. local file://), use fallback
+        // Fetch failed (e.g. opened over file:// rather than a web server)
+        container.innerHTML = '<p class="error-message">Unable to load publications.</p>';
     }
-    renderPublications(fallbackPublicationsData);
 }
 
 // ===== ALUMNI SECTION DYNAMIC LOADING =====
@@ -587,6 +604,7 @@ function createPersonHTML(person) {
     const email = (person['Email'] || '').trim();
     const github = person['GitHub'] || '';
     const scholar = person['GoogleScholar'] || '';
+    const cv = person['CV'] || '';
     const bio = person['Bio'] || '';
     
     // Photo HTML
@@ -599,7 +617,7 @@ function createPersonHTML(person) {
     
     // Build links
     let linksHTML = '';
-    if (github || scholar) {
+    if (github || scholar || cv) {
         linksHTML = '<div class="person-links">';
         if (github) {
             linksHTML += `<a href="${github}" class="person-link" target="_blank">
@@ -611,6 +629,12 @@ function createPersonHTML(person) {
             linksHTML += `<a href="${scholar}" class="person-link" target="_blank">
                 ${scholarIcon}
                 <span>Google Scholar</span>
+            </a>`;
+        }
+        if (cv) {
+            linksHTML += `<a href="${normalizePath(cv)}" class="person-link" target="_blank">
+                ${cvIcon}
+                <span>CV</span>
             </a>`;
         }
         linksHTML += '</div>';
@@ -662,26 +686,14 @@ async function loadPerson() {
         const people = parseCSV(csvText);
         
         // Find the person
-        const person = people.find(p => p['Name'] === personName);
+        const person = people.find(p => p['Name'] === personName && isVisible(p));
         
         if (person) {
             container.innerHTML = createPersonHTML(person);
         } else {
-            // Try fallback data
-            const fallbackPerson = fallbackTeamData.find(p => p['Name'] === personName);
-            if (fallbackPerson) {
-                container.innerHTML = createPersonHTML(fallbackPerson);
-            } else {
-                container.innerHTML = '<p class="error-message">Person not found.</p>';
-            }
+            container.innerHTML = '<p class="error-message">Person not found.</p>';
         }
     } catch (error) {
-        // Try fallback data
-        const fallbackPerson = fallbackTeamData.find(p => p['Name'] === personName);
-        if (fallbackPerson) {
-            container.innerHTML = createPersonHTML(fallbackPerson);
-        } else {
-            container.innerHTML = '<p class="error-message">Unable to load person data.</p>';
-        }
+        container.innerHTML = '<p class="error-message">Unable to load person data.</p>';
     }
 }
