@@ -5,7 +5,10 @@ Usage:
 
 Within each year (the year is the first 4 chars of the `date` column), sort by:
     1. led_by_kinney=TRUE before led_by_kinney=FALSE
-    2. Preprints (row has a `preprint` URL but no `paper` URL) before published papers
+    2. Preprints (row has a `preprint` URL but no `paper` URL, and status is not
+       `in_press`) before everything else. In-press rows (`status` = `in_press`)
+       are grouped with published papers, not with preprints, and sorted by
+       date among them.
     3. Most recent first by `date` (full YYYY-MM-DD beats YYYY-MM beats YYYY).
        Rows with missing month/day go to the end of their subgroup.
     4. Within full ties, preserve existing CSV order (stable sort).
@@ -32,7 +35,8 @@ def parse_date(s):
 
 
 def is_preprint(row):
-    return bool((row.get("preprint") or "").strip()) and not (row.get("paper") or "").strip()
+    is_in_press = (row.get("status") or "").strip().lower() == "in_press"
+    return bool((row.get("preprint") or "").strip()) and not (row.get("paper") or "").strip() and not is_in_press
 
 
 def is_led(row):
