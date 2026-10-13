@@ -132,14 +132,6 @@
 }
 
 @media (max-width: 768px) {
-    .pub-year h2 {
-        font-size: 1.35rem;
-    }
-    
-    .pub-title {
-        font-size: 1rem;
-    }
-    
     .pub-item {
         padding: 1rem;
     }

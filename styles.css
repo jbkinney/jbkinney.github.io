@@ -20,6 +20,9 @@
 
 html {
     scroll-padding-top: 11rem;
+    /* Prevent narrow viewports from inflating individual text blocks differently. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 body {
